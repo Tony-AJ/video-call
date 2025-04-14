@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Video Call Room</title>
+  <title>Multi-User Video Call</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h2>Room Video Call</h2>
-  <input type="text" id="roomInput" placeholder="Room ID" />
+  <h2>Join a Video Call Room</h2>
+  <input id="roomInput" placeholder="Enter Room ID" />
   <button onclick="joinRoom()">Join</button>
 
   <div id="controls">
@@ -14,10 +14,8 @@
     <button onclick="toggleCam()">📷</button>
   </div>
 
-  <div>
-    <video id="localVideo" autoplay muted></video>
-    <video id="remoteVideo" autoplay></video>
-  </div>
+  <video id="localVideo" autoplay muted playsinline></video>
+  <div id="remoteVideos"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="script.js"></script>

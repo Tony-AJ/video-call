@@ -1,44 +1,45 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: sans-serif;
+    background-color: #f4f4f4;
     text-align: center;
-    background: #f4f4f4;
-    margin: 0;
     padding: 20px;
-  }
-  
-  h2 {
-    color: #333;
   }
   
   input {
     padding: 10px;
-    font-size: 16px;
     width: 200px;
+    font-size: 16px;
   }
   
   button {
-    padding: 10px 16px;
+    padding: 10px;
     font-size: 16px;
     margin: 5px;
     cursor: pointer;
-    border: none;
-    background: #007bff;
-    color: white;
     border-radius: 5px;
+    border: none;
+    background-color: #007bff;
+    color: white;
   }
   
   button:hover {
-    background: #0056b3;
+    background-color: #0056b3;
   }
   
   video {
-    width: 45%;
+    width: 300px;
+    border-radius: 10px;
     margin: 10px;
-    border: 2px solid #007bff;
-    border-radius: 8px;
+    background: black;
+  }
+  
+  #remoteVideos {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   
   #controls {
-    margin-top: 15px;
+    margin: 20px;
   }
   

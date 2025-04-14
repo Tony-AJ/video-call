@@ -1,7 +1,7 @@
 const socket = io();
 
 let localStream;
-let peerConnection;
+const peerConnections = {};
 let micEnabled = true;
 let camEnabled = true;
 
@@ -10,39 +10,96 @@ const config = {
 };
 
 const localVideo = document.getElementById('localVideo');
-const remoteVideo = document.getElementById('remoteVideo');
+const remoteContainer = document.getElementById('remoteVideos');
 
 function joinRoom() {
-  const roomID = document.getElementById('roomInput').value;
-  if (!roomID) return alert("Enter room ID");
-
-  socket.emit('join', roomID);
+  const roomID = document.getElementById('roomInput').value.trim();
+  if (!roomID) return alert("Enter a Room ID!");
 
   navigator.mediaDevices.getUserMedia({ video: true, audio: true })
     .then(stream => {
-      localVideo.srcObject = stream;
       localStream = stream;
+      localVideo.srcObject = stream;
 
-      createPeerConnection();
-
-      localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, localStream);
-      });
+      // ✅ Join room only after media is ready
+      socket.emit('join', roomID);
+    })
+    .catch(error => {
+      console.error('[ERROR] Accessing media devices failed:', error);
+      alert('Please allow camera and microphone access.');
     });
 }
 
-function createPeerConnection() {
-  peerConnection = new RTCPeerConnection(config);
+socket.on('all-users', users => {
+  users.forEach(userId => {
+    const pc = createPeerConnection(userId);
+    peerConnections[userId] = pc;
 
-  peerConnection.onicecandidate = event => {
+    localStream.getTracks().forEach(track => {
+      pc.addTrack(track, localStream);
+    });
+
+    pc.createOffer().then(offer => {
+      pc.setLocalDescription(offer);
+      socket.emit('offer', { offer, to: userId });
+    });
+  });
+});
+
+socket.on('offer', async ({ from, offer }) => {
+  const pc = createPeerConnection(from);
+  peerConnections[from] = pc;
+
+  localStream.getTracks().forEach(track => {
+    pc.addTrack(track, localStream);
+  });
+
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  socket.emit('answer', { answer, to: from });
+});
+
+socket.on('answer', async ({ from, answer }) => {
+  await peerConnections[from].setRemoteDescription(new RTCSessionDescription(answer));
+});
+
+socket.on('ice-candidate', ({ from, candidate }) => {
+  if (peerConnections[from]) {
+    peerConnections[from].addIceCandidate(new RTCIceCandidate(candidate));
+  }
+});
+
+socket.on('user-disconnected', socketId => {
+  const video = document.getElementById(socketId);
+  if (video) video.remove();
+  if (peerConnections[socketId]) peerConnections[socketId].close();
+  delete peerConnections[socketId];
+});
+
+function createPeerConnection(socketId) {
+  const pc = new RTCPeerConnection(config);
+
+  pc.onicecandidate = event => {
     if (event.candidate) {
-      socket.emit('ice-candidate', event.candidate);
+      socket.emit('ice-candidate', { to: socketId, candidate: event.candidate });
     }
   };
 
-  peerConnection.ontrack = event => {
+  pc.ontrack = event => {
+    let remoteVideo = document.getElementById(socketId);
+    if (!remoteVideo) {
+      remoteVideo = document.createElement('video');
+      remoteVideo.id = socketId;
+      remoteVideo.autoplay = true;
+      remoteVideo.playsInline = true;
+      remoteVideo.classList.add('remote-video');
+      remoteContainer.appendChild(remoteVideo);
+    }
     remoteVideo.srcObject = event.streams[0];
   };
+
+  return pc;
 }
 
 function toggleMic() {
@@ -51,7 +108,6 @@ function toggleMic() {
   localStream.getAudioTracks().forEach(track => {
     track.enabled = micEnabled;
   });
-  console.log(`[AUDIO] Mic ${micEnabled ? 'unmuted' : 'muted'}`);
 }
 
 function toggleCam() {
@@ -60,33 +116,4 @@ function toggleCam() {
   localStream.getVideoTracks().forEach(track => {
     track.enabled = camEnabled;
   });
-  console.log(`[VIDEO] Camera ${camEnabled ? 'on' : 'off'}`);
 }
-
-socket.on('user-joined', async () => {
-  console.log('[CLIENT] User joined, creating offer...');
-  const offer = await peerConnection.createOffer();
-  await peerConnection.setLocalDescription(offer);
-  socket.emit('offer', offer);
-});
-
-socket.on('offer', async offer => {
-  console.log('[CLIENT] Received offer, sending answer...');
-  await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-  const answer = await peerConnection.createAnswer();
-  await peerConnection.setLocalDescription(answer);
-  socket.emit('answer', answer);
-});
-
-socket.on('answer', async answer => {
-  console.log('[CLIENT] Received answer');
-  await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-});
-
-socket.on('ice-candidate', async candidate => {
-  try {
-    await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-  } catch (e) {
-    console.error('[ICE] Error adding ICE candidate:', e);
-  }
-});

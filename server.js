@@ -6,38 +6,30 @@ const io = require('socket.io')(server);
 app.use(express.static('public'));
 
 io.on('connection', socket => {
-  console.log('[SERVER] New user:', socket.id);
-
   socket.on('join', roomID => {
-    const room = io.sockets.adapter.rooms.get(roomID) || new Set();
-    const numberOfUsers = room.size;
-
-    console.log(`[SERVER] ${socket.id} joining room ${roomID} (${numberOfUsers} already inside)`);
-
     socket.join(roomID);
-    if (numberOfUsers > 0) {
-      socket.to(roomID).emit('user-joined', socket.id);
-    }
+    const users = Array.from(io.sockets.adapter.rooms.get(roomID) || []);
+    const otherUsers = users.filter(id => id !== socket.id);
+    socket.emit('all-users', otherUsers);
 
-    socket.on('offer', (data) => {
-      socket.to(roomID).emit('offer', data);
+    socket.on('offer', ({ offer, to }) => {
+      io.to(to).emit('offer', { from: socket.id, offer });
     });
 
-    socket.on('answer', (data) => {
-      socket.to(roomID).emit('answer', data);
+    socket.on('answer', ({ answer, to }) => {
+      io.to(to).emit('answer', { from: socket.id, answer });
     });
 
-    socket.on('ice-candidate', (data) => {
-      socket.to(roomID).emit('ice-candidate', data);
+    socket.on('ice-candidate', ({ candidate, to }) => {
+      io.to(to).emit('ice-candidate', { from: socket.id, candidate });
     });
 
     socket.on('disconnect', () => {
-      console.log(`[SERVER] ${socket.id} disconnected`);
-      socket.to(roomID).emit('user-disconnected');
+      socket.to(roomID).emit('user-disconnected', socket.id);
     });
   });
 });
 
 server.listen(3000, () => {
-  console.log('✅ Server running on http://localhost:3000');
+  console.log('Server running on http://localhost:3000');
 });
