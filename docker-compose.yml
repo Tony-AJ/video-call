@@ -1,0 +1,29 @@
+# version: '3.8'
+
+services:
+  video-call-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: video-call-app:latest
+    container_name: video-call-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - video-call-network
+    volumes:
+      # Optional: Mount for development (uncomment if needed)
+      # - .:/usr/src/app
+      # - /usr/src/app/node_modules
+      - logs:/usr/src/app/logs
+
+networks:
+  video-call-network:
+    driver: bridge
+
+volumes:
+  logs:
+    # driver: local
