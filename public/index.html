@@ -1,23 +1,48 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Multi-User Video Call</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Video Call</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <h2>Join a Video Call Room</h2>
-  <input id="roomInput" placeholder="Enter Room ID" />
-  <button onclick="joinRoom()">Join</button>
+    <!-- Join Screen -->
+    <main id="join-container">
+        <div class="join-card">
+            <h2>Video Call</h2>
+            <p>Enter a room ID to start a secure video session</p>
+            
+            <div class="input-group">
+                <input type="text" id="roomInput" placeholder="e.g. workspace-alpha" autocomplete="off">
+            </div>
+            
+            <button class="btn-primary" onclick="joinRoom()">Join Room</button>
+        </div>
+    </main>
 
-  <div id="controls">
-    <button onclick="toggleMic()">🎤</button>
-    <button onclick="toggleCam()">📷</button>
-  </div>
+    <!-- Call Screen -->
+    <main id="call-container">
+        <div id="video-grid">
+            <!-- Local video will be added here -->
+             <div id="local-video-wrapper" class="video-wrapper">
+                <video id="localVideo" autoplay muted playsinline></video>
+                <div class="participant-label">You (Host)</div>
+             </div>
+             <!-- Remote videos will be appended here -->
+        </div>
 
-  <video id="localVideo" autoplay muted playsinline></video>
-  <div id="remoteVideos"></div>
+        <div id="controls">
+            <button id="micBtn" class="ctrl-btn" onclick="toggleMic()" title="Toggle Microphone">🎤</button>
+            <button id="camBtn" class="ctrl-btn" onclick="toggleCam()" title="Toggle Camera">📷</button>
+            <button class="ctrl-btn leave" onclick="leaveRoom()" title="Leave Call">🚪</button>
+        </div>
+    </main>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="script.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
